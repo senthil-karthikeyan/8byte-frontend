@@ -1,12 +1,12 @@
 import type { NextConfig } from "next";
+import { BASE_URL } from "./src/config";
 
 const nextConfig: NextConfig = {
-  rewrites : async () => {
-    const baseURL = process.env.BASE_URL
+  rewrites: async () => {
     return [
       {
         source: "/api/portfolio",
-        destination: `${baseURL}/portfolio`,
+        destination: `${BASE_URL}/portfolio`,
       },
     ];
   },

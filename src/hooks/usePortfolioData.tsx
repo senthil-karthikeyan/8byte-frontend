@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePortfolio } from "@/services";
 import { IPortfolio, LiveUpdate } from "@/types";
+import { WS_URL } from "@/config";
 
 const usePortfolioData = () => {
   const { useGetAllPortfolio } = usePortfolio();
@@ -11,25 +12,34 @@ const usePortfolioData = () => {
 
   const [updates, setUpdates] = useState<Record<string, LiveUpdate>>({});
 
-  const ws = new WebSocket("ws://localhost:8080/ws");
+  useEffect(() => {
+    const ws = new WebSocket(`${WS_URL}/ws`);
 
-  ws.onmessage = (e) => {
-    console.log("triggering");
+    ws.onmessage = (e) => {
+      console.log(e.data);
+      const updates = JSON.parse(e.data);
 
-    const updates = JSON.parse(e.data);
+      updates.forEach((row: LiveUpdate) => {
+        setUpdates((prev) => ({
+          ...prev,
+          [row.symbol]: {
+            symbol: row.symbol,
+            cmp: row.cmp,
+            presentValue: row.presentValue,
+            gainLoss: row.gainLoss,
+          },
+        }));
+      });
+    };
+    ws.onerror = (e) => {
+      console.error("WS error", e);
+    };
 
-    updates.forEach((row: LiveUpdate) => {
-      setUpdates((prev) => ({
-        ...prev,
-        [row.symbol]: {
-          symbol: row.symbol,
-          cmp: row.cmp,
-          presentValue: row.presentValue,
-          gainLoss: row.gainLoss,
-        },
-      }));
-    });
-  };
+    return () => {
+      console.log("Closing WS");
+      ws.close();
+    };
+  }, []);
 
   const updatedData = useMemo(() => {
     if (!data) {
